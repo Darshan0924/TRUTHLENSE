@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#172621">
+  <meta name="description" content="TruthLens AI — inspect images and videos, review detection evidence, and build a trained media verification model.">
+  <title>TruthLens AI · Media analysis</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <svg class="icon-definitions" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="icon-scan" viewBox="0 0 24 24"><path d="M8 3H4a1 1 0 0 0-1 1v4m13-5h4a1 1 0 0 1 1 1v4M3 16v4a1 1 0 0 0 1 1h4m8 0h4a1 1 0 0 0 1-1v-4"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></symbol>
+    <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="icon-history" viewBox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2 7M3 5v6h6m3-4v5l3 2"/></symbol>
+    <symbol id="icon-book" viewBox="0 0 24 24"><path d="M12 5v16M3 4h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5v16h-5a4 4 0 0 0-4 1 4 4 0 0 0-4-1H3Z"/></symbol>
+    <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></symbol>
+    <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="icon-file" viewBox="0 0 24 24"><path d="M14 3H5a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9Zm0 0v6h6M8 14h8m-8 3h5"/></symbol>
+    <symbol id="icon-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m21 16-6-6L3 21"/></symbol>
+    <symbol id="icon-video" viewBox="0 0 24 24"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3"/></symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.5"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="icon-spark" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5ZM20 2v4m-2-2h4"/></symbol>
+    <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  </defs></svg>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <aside class="sidebar" aria-label="Main navigation">
+    <a class="brand" href="/" aria-label="TruthLens AI home">
+      <span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#icon-scan"/></svg></span>
+      <span class="brand-name">TruthLens<span class="brand-ai">AI</span></span>
+    </a>
+    <div class="sidebar-label">YOUR WORKSPACE</div>
+    <nav class="nav-items">
+      <button class="nav-item active" data-view="analyze" aria-current="page" aria-label="Media analysis"><svg class="icon" aria-hidden="true"><use href="#icon-grid"/></svg><span>Media analysis</span><span class="nav-active-dot"></span></button>
+      <button class="nav-item" data-view="history" aria-label="Analysis history"><svg class="icon" aria-hidden="true"><use href="#icon-history"/></svg><span>Analysis history</span><span class="history-count" id="nav-history-count" hidden>0</span></button>
+      <button class="nav-item" data-view="guide" aria-label="Project guide"><svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg><span>Project guide</span></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="model-sidebar">
+        <span class="model-sidebar-icon"><svg class="icon" aria-hidden="true"><use href="#icon-spark"/></svg></span>
+        <div class="model-sidebar-title">A model makes it possible.</div>
+        <p id="sidebar-model-copy">Prepare a dataset and train your detector to unlock predictions.</p>
+        <button class="sidebar-link" data-view="guide">Explore the workflow<svg class="icon" aria-hidden="true"><use href="#icon-arrow"/></svg></button>
+      </div>
+      <div class="sidebar-footer"><span class="status-dot" id="sidebar-status-dot"></span><span id="sidebar-status">Connecting to workspace</span><span class="version">v0.1</span></div>
+    </div>
+  </aside>
+
+  <main id="main-content" class="main">
+    <header class="topbar">
+      <div class="breadcrumb"><span>WORKSPACE</span><svg class="icon" aria-hidden="true"><use href="#icon-chevron"/></svg><span id="breadcrumb-view">MEDIA ANALYSIS</span></div>
+      <div class="topbar-right"><span class="workspace-tag">DEVELOPMENT WORKSPACE</span><span class="avatar" aria-label="TruthLens workspace">TL</span></div>
+    </header>
+
+    <section id="view-analyze" class="view" aria-labelledby="analysis-title">
+      <div class="page-heading">
+        <div><div class="eyebrow">SEE MORE. KNOW MORE.</div><h1 id="analysis-title">Look beyond the pixels<span>.</span></h1><p class="page-description">A thoughtful workspace for inspecting images and videos.<br class="desktop-break"> Follow the evidence. Understand the uncertainty.</p></div>
+        <div class="model-status-card"><span class="small-label">DETECTION MODEL</span><div class="model-status-line"><span class="status-dot amber" id="model-status-dot"></span><span id="model-status-text">Checking status</span></div><button class="text-link" data-view="guide">View setup guide<svg class="icon" aria-hidden="true"><use href="#icon-arrow"/></svg></button></div>
+      </div>
+
+      <div class="steps-strip" aria-label="Analysis workflow">
+        <div class="step"><span class="step-number">01</span><span>Upload your media</span></div><svg class="icon step-arrow" aria-hidden="true"><use href="#icon-arrow"/></svg>
+        <div class="step"><span class="step-number">02</span><span>Inspect the evidence</span></div><svg class="icon step-arrow" aria-hidden="true"><use href="#icon-arrow"/></svg>
+        <div class="step"><span class="step-number">03</span><span>Review &amp; export</span></div>
+      </div>
+
+      <div class="workspace-grid">
+        <section class="panel upload-panel" aria-labelledby="media-title">
+          <div class="panel-header"><div><h2 id="media-title">Your media</h2><p>Start with an image or a short video.</p></div><span class="panel-index">01 / INPUT</span></div>
+          <input id="file-input" type="file" accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.avi,.webm" hidden>
+          <button id="drop-zone" class="drop-zone" aria-label="Upload an image or video. You can also drag and drop a file here.">
+            <span class="upload-art" aria-hidden="true"><svg viewBox="0 0 120 100" fill="none"><rect x="27" y="15" width="66" height="67" rx="10" fill="#fff" stroke="#bbc8bd" stroke-width="1.5" transform="rotate(-9 60 48)"/><rect x="29" y="17" width="66" height="67" rx="10" fill="#f5f8ed" stroke="#8da69c" stroke-width="1.5"/><circle cx="48" cy="36" r="6" fill="#ccddb4"/><path d="m36 68 16-18 12 11 10-14 14 21H36Z" fill="#b5c8a2"/><path d="m64 61 10-14 14 21H69Z" fill="#648e73"/><circle cx="92" cy="77" r="16" fill="#235d47" stroke="#f8faf5" stroke-width="4"/><path d="M92 83V71m-5 5 5-5 5 5" stroke="#e6f4bc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 23h-8m4-4v8M106 40h-6m3-3v6" stroke="#b0bea7" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+            <span class="drop-title">Drop a file to get a closer look</span><span class="drop-subtitle">or <span class="browse-link">browse your files</span></span>
+            <span class="file-type-tags"><span><svg class="icon" aria-hidden="true"><use href="#icon-image"/></svg>JPG, PNG, WEBP</span><span><svg class="icon" aria-hidden="true"><use href="#icon-video"/></svg>MP4, MOV, AVI, WEBM</span></span>
+            <span class="upload-limit" id="upload-limit">Up to 50 MB per file</span>
+          </button>
+
+          <div id="selected-media" class="selected-media" hidden>
+            <div class="media-preview" id="media-preview"></div>
+            <div class="selected-file-row"><span class="file-icon"><svg class="icon" aria-hidden="true"><use href="#icon-file"/></svg></span><div class="selected-file-info"><strong id="selected-filename"></strong><span id="selected-details"></span></div><button class="icon-button" id="clear-file" aria-label="Remove selected file"><svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg></button></div>
+          </div>
+          <div id="upload-error" class="inline-error" role="alert" hidden></div>
+          <button id="analyze-button" class="primary-button" disabled><svg class="icon" aria-hidden="true"><use href="#icon-scan"/></svg><span id="analyze-button-label">Inspect media</span><svg class="icon button-arrow" aria-hidden="true"><use href="#icon-arrow"/></svg></button>
+          <div id="analysis-progress" class="analysis-progress" hidden><div class="progress-heading"><span id="progress-label">Uploading media</span><span id="progress-percent"></span></div><div class="progress-track"><div id="progress-bar"></div></div><p>Large videos may take a moment to process.</p></div>
+          <p class="upload-note"><svg class="icon" aria-hidden="true"><use href="#icon-shield"/></svg>Processed locally. Preview frames and reports stay in this workspace.</p>
+        </section>
+
+        <section class="panel result-panel" aria-labelledby="result-panel-title" aria-live="polite" aria-busy="false">
+          <div class="panel-header"><div><h2 id="result-panel-title">Analysis overview</h2><p>Context before conclusions.</p></div><span id="result-status" class="status-pill neutral">Awaiting media</span></div>
+          <div id="empty-result" class="empty-result"><span class="empty-result-icon"><svg class="icon" aria-hidden="true"><use href="#icon-scan"/></svg><span class="lens-line"></span></span><h3>A clearer picture starts here.</h3><p>Upload media to inspect its metadata, sampled frames, and image quality.</p><div class="empty-result-divider"></div><span class="empty-result-caption">PREDICTIONS REQUIRE A TRAINED MODEL</span></div>
+          <div id="busy-result" class="busy-result" hidden><span class="spinner" aria-hidden="true"></span><h3>Inspecting your media</h3><p>Reading the file and preparing visual evidence.</p></div>
+          <div id="result-content" class="result-content" hidden></div>
+          <div class="result-panel-footer"><svg class="icon" aria-hidden="true"><use href="#icon-info"/></svg><p>Detection is a screening tool. Estimates and model attention are not proof of authenticity or manipulation.</p></div>
+        </section>
+      </div>
+
+      <section id="evidence-section" class="panel evidence-panel" aria-labelledby="evidence-title" hidden>
+        <div class="panel-header"><div><div class="eyebrow">A LOOK AT THE DETAILS</div><h2 id="evidence-title">Visual evidence</h2><p>Explore sampled frames and their technical quality.</p></div><a id="download-report" class="secondary-button" href="#" download><svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>Export report</a></div>
+        <div class="evidence-layout"><div class="evidence-viewer"><div class="evidence-image-wrap"><img id="evidence-image" alt="Selected evidence frame"><span class="frame-caption" id="frame-caption"></span></div><div class="evidence-controls"><span id="evidence-description"></span><label class="heatmap-control" id="heatmap-control" hidden><input id="heatmap-toggle" type="checkbox"><span class="toggle"></span>Model attention</label></div><div class="frame-thumbnails" id="frame-thumbnails" aria-label="Select an evidence frame"></div></div><aside class="evidence-details"><span class="small-label">FRAME QUALITY</span><h3>Read the pixels with context.</h3><p>These measurements describe the sampled frame. They do not determine authenticity.</p><dl class="quality-list" id="quality-list"></dl><div class="face-diagnostics" id="face-diagnostics" hidden><div><span>Frontal faces detected</span><strong id="face-count"></strong></div><p>Classical detection may miss faces or include false detections. Face counts do not determine authenticity.</p></div><div class="attention-note" id="attention-note" hidden><svg class="icon" aria-hidden="true"><use href="#icon-info"/></svg><p>Grad-CAM highlights what influenced the model. It does not identify a proven forgery region.</p></div><div class="frame-prediction" id="frame-prediction" hidden></div></aside></div>
+      </section>
+
+      <section class="recent-section" aria-labelledby="recent-title"><div class="section-heading"><div><h2 id="recent-title">Recent activity</h2><p>Your last few inspections, all in one place.</p></div><button class="text-link" data-view="history">View history<svg class="icon" aria-hidden="true"><use href="#icon-arrow"/></svg></button></div><div id="recent-history" class="recent-history"><div class="history-empty"><span class="history-empty-icon"><svg class="icon" aria-hidden="true"><use href="#icon-history"/></svg></span><span>No analyses yet. Your first inspection will appear here.</span></div></div></section>
+      <footer class="page-footer"><span>Built for curiosity. Designed for clarity.</span><span>TruthLens AI<span class="footer-dot">·</span>Research &amp; development</span></footer>
+    </section>
+
+    <section id="view-history" class="view" aria-labelledby="history-title" hidden><div class="page-heading"><div><div class="eyebrow">YOUR RESEARCH, REMEMBERED.</div><h1 id="history-title">Analysis history<span>.</span></h1><p class="page-description">Revisit your saved media inspections and download their reports.</p></div><button id="refresh-history" class="secondary-button"><svg class="icon" aria-hidden="true"><use href="#icon-history"/></svg>Refresh history</button></div><div class="history-toolbar"><span id="history-summary">Loading saved analyses…</span><label class="history-search"><svg class="icon" aria-hidden="true"><use href="#icon-scan"/></svg><input id="history-search" type="search" placeholder="Find a filename" aria-label="Search analysis history"></label></div><div id="full-history" class="full-history"></div><p class="history-storage-note"><svg class="icon" aria-hidden="true"><use href="#icon-info"/></svg>History is saved on the workspace server. Download reports to keep a copy outside this environment.</p></section>
+
+    <section id="view-guide" class="view" aria-labelledby="guide-title" hidden><div class="page-heading"><div><div class="eyebrow">FROM AN IDEA TO EVIDENCE.</div><h1 id="guide-title">Build a thoughtful detector<span>.</span></h1><p class="page-description">The inspection workflow is ready. A trained model is the next step.</p></div><span class="guide-mark"><svg class="icon" aria-hidden="true"><use href="#icon-spark"/></svg></span></div><div class="guide-intro panel"><span class="guide-intro-icon"><svg class="icon" aria-hidden="true"><use href="#icon-info"/></svg></span><div><h2>Start with what the app can verify.</h2><p>Without a trained checkpoint, TruthLens reads media, samples frames, measures image quality, and creates a report. It does not assign an authenticity label or invent a confidence score.</p></div></div><div class="guide-grid"><article class="panel guide-card"><span class="guide-number">01</span><svg class="icon guide-card-icon" aria-hidden="true"><use href="#icon-image"/></svg><h2>Prepare labeled data</h2><p>Collect examples of authentic, AI-generated, and manipulated images from sources you are permitted to use.</p><ul><li>Keep separate training, validation, and test sets.</li><li>Split by source to reduce data leakage.</li><li>Document image origins and labeling decisions.</li></ul></article><article class="panel guide-card"><span class="guide-number">02</span><svg class="icon guide-card-icon" aria-hidden="true"><use href="#icon-spark"/></svg><h2>Train &amp; evaluate</h2><p>Use the repository's training workflow to build a baseline and test it on data it has never seen.</p><ul><li>Compare performance across all three classes.</li><li>Check compression, resizing, and new sources.</li><li>Load the evaluated checkpoint into the app.</li></ul></article><article class="panel guide-card"><span class="guide-number">03</span><svg class="icon guide-card-icon" aria-hidden="true"><use href="#icon-scan"/></svg><h2>Inspect with care</h2><p>Review predictions alongside the original media, sampled frames, and model attention.</p><ul><li>A score depends on the model and its data.</li><li>Video uses sampled frames, not every frame.</li><li>Verify important claims with other evidence.</li></ul></article></div><div class="guide-bottom panel"><div><h2>Three classes. One careful interpretation.</h2><p>Authentic · AI-generated · Manipulated</p></div><p>Real media may be misclassified, and new generation methods may go undetected. Technical quality measurements are separate from detection predictions.</p></div><button class="primary-button guide-start" data-view="analyze">Inspect your first file<svg class="icon" aria-hidden="true"><use href="#icon-arrow"/></svg></button></section>
+  </main>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

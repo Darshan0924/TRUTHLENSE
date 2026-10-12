@@ -1,0 +1,31 @@
+[project]
+name = "truthlens-ai"
+version = "0.1.0"
+description = "Image and video authenticity screening with a reproducible PyTorch training workflow"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115.12,<1",
+  "uvicorn>=0.34.2,<1",
+  "python-multipart>=0.0.20,<1",
+  "pillow>=11.2.1,<13",
+  "numpy>=2.2.6,<2.3",
+  "opencv-python-headless>=4.12.0.88,<4.13",
+  "torch==2.8.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3.5,<10", "httpx>=0.28.1,<1"]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
