@@ -1,10 +1,10 @@
 # Training the TruthLens baseline
 
 TruthLens includes a small, three-class PyTorch CNN, training and evaluation
-commands, and Grad-CAM explanations. No pretrained detector or claimed accuracy
-is included. Without a trained checkpoint, authenticity classification is
-unavailable; media inspection still works. A working training pipeline is not evidence of useful detection
-accuracy.
+commands, and Grad-CAM explanations. This page documents the custom three-class
+training workflow. For ready-made binary AI-image screening, use the separate
+[pretrained setup](PRETRAINED.md). A working training pipeline is not evidence of
+useful detection accuracy; neither workflow provides a forensic guarantee.
 
 Provide legally usable, labeled image data from representative sources:
 

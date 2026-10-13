@@ -273,6 +273,60 @@ def test_model_inference_failure_is_safe_and_leaves_no_partial_record(data_dir):
     assert not list((data_dir / "results").glob("*"))
 
 
+def test_binary_pretrained_scores_reports_and_video_without_heatmaps(data_dir, tmp_path):
+    class BinaryDetector:
+        ready = True
+        info = {"ready": True, "classes": ["authentic", "ai_generated"],
+                "model_id": "test/binary", "capabilities": ["ai_generation"],
+                "limitations": ["Does not detect face swaps or general manipulation."]}
+
+        def predict_with_heatmap(self, image):
+            score = float(np.asarray(image).mean()) / 255
+            probabilities = {"authentic": 1 - score, "ai_generated": score}
+            label = max(probabilities, key=probabilities.get)
+            return {"label": label, "confidence": probabilities[label], "probabilities": probabilities}, None
+
+    with TestClient(create_app(data_dir=data_dir, detector=BinaryDetector())) as client:
+        for filename, payload in (
+            ("white.png", png_bytes((255, 255, 255))),
+            ("clip.avi", create_video(tmp_path / "binary.avi")),
+        ):
+            response = client.post("/api/analyze", files={"file": (filename, payload)})
+            assert response.status_code == 201, response.text
+            result = response.json()
+            assert set(result["prediction"]["probabilities"]) == {"authentic", "ai_generated"}
+            assert all(frame["heatmap_url"] is None for frame in result["frames"])
+            assert any("face swaps" in text for text in result["limitations"])
+            assert not any("Grad-CAM" in text for text in result["limitations"])
+            for label in ("authentic", "ai_generated"):
+                expected = np.mean([frame["prediction"]["probabilities"][label] for frame in result["frames"]])
+                assert result["prediction"]["probabilities"][label] == pytest.approx(expected)
+            assert client.get(f'/api/analyses/{result["id"]}/report').json() == result
+            assert client.get(f'/api/analyses/{result["id"]}/heatmaps/0').status_code == 404
+
+
+def test_app_selects_pretrained_bundle_and_explicit_checkpoint_has_priority(data_dir, tmp_path, monkeypatch):
+    import truthlens.pretrained as pretrained_module
+
+    directory = tmp_path / "pretrained"
+    directory.mkdir()
+    (directory / "manifest.json").write_text("{}")
+    monkeypatch.setenv("TRUTHLENS_PRETRAINED_DIR", str(directory))
+    loaded = []
+
+    def load_bundle(path):
+        loaded.append(path)
+        return UntrainedDetector()
+
+    monkeypatch.setattr(pretrained_module, "PretrainedDetector", load_bundle)
+    with TestClient(create_app(data_dir=data_dir)) as client:
+        assert client.get("/api/status").status_code == 200
+    assert loaded == [directory]
+    with TestClient(create_app(data_dir=data_dir, model_path=tmp_path / "missing.pt")) as client:
+        assert client.get("/api/status").json()["model"]["status"] == "load_failed"
+    assert loaded == [directory], "An explicit custom checkpoint must take priority over the pretrained bundle"
+
+
 def test_missing_checkpoint_keeps_metadata_workflow_available(data_dir, tmp_path):
     with TestClient(create_app(data_dir=data_dir, model_path=tmp_path / "missing.pt")) as client:
         status = client.get("/api/status").json()

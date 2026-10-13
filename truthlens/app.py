@@ -108,6 +108,9 @@ def create_app(
     configured_model = model_path
     if configured_model is None and os.environ.get("TRUTHLENS_MODEL_PATH"):
         configured_model = Path(os.environ["TRUTHLENS_MODEL_PATH"])
+    pretrained_dir = Path(os.environ.get(
+        "TRUTHLENS_PRETRAINED_DIR", str(PROJECT_ROOT / "models" / "pretrained")
+    ))
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
@@ -117,13 +120,20 @@ def create_app(
         else:
             try:
                 from truthlens.ml import Detector
+                if configured_model is None and (
+                    (pretrained_dir / "manifest.json").is_file()
+                    or os.environ.get("TRUTHLENS_PRETRAINED_DIR")
+                ):
+                    from truthlens.pretrained import PretrainedDetector
 
-                application.state.detector = await run_in_threadpool(Detector, configured_model)
+                    application.state.detector = await run_in_threadpool(PretrainedDetector, pretrained_dir)
+                else:
+                    application.state.detector = await run_in_threadpool(Detector, configured_model)
             except Exception:
                 # Low-level checkpoint errors can contain local paths. Keep the
                 # public status actionable without echoing filesystem details.
                 application.state.detector = _UnavailableDetector(
-                    "The configured checkpoint could not be loaded. Check its format and file permissions, then restart."
+                    "The configured model could not be loaded. Check the checkpoint or rerun the pretrained setup, then restart."
                 )
         application.state.analysis_slots = asyncio.Semaphore(2)
         # Bound CPU and memory use while producing model predictions and Grad-CAM.

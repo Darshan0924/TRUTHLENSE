@@ -5,6 +5,35 @@ const classLabels = { authentic: "Authentic", ai_generated: "AI-generated", mani
 const state = { status: null, file: null, previewUrl: null, result: null, frame: 0, history: [], total: 0, operation: 0, busy: false, view: "analyze", toastTimer: null };
 const defaultExtensions = [".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov", ".avi", ".webm"];
 
+function isPretrained(model) {
+  return Boolean(model?.model_id && Array.isArray(model.classes) && model.classes.length === 2 && model.classes.includes("authentic") && model.classes.includes("ai_generated"));
+}
+
+function predictionLabel(key, model) {
+  if (isPretrained(model)) return { authentic: "Likely human-created", ai_generated: "Likely AI-generated" }[key] || key;
+  return classLabels[key] || key || "Unrecognized model label";
+}
+
+function modelSource(model) {
+  const details = element("p", "model-source");
+  details.append(document.createTextNode("Model: "));
+  let sourceUrl = null;
+  try {
+    const candidate = new URL(model.source_url);
+    if (candidate.protocol === "https:" && candidate.hostname === "huggingface.co" && !candidate.username && !candidate.password) sourceUrl = candidate.href;
+  } catch { /* A source without a valid public model URL remains plain text. */ }
+  const source = element(sourceUrl ? "a" : "span", "", model.model_id);
+  if (sourceUrl) {
+    source.href = sourceUrl;
+    source.target = "_blank";
+    source.rel = "noopener noreferrer";
+  }
+  details.append(source);
+  if (model.license) details.append(document.createTextNode(` · ${model.license} license`));
+  if (model.license_notice) details.append(document.createTextNode(` · ${model.license_notice}`));
+  return details;
+}
+
 function element(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -92,13 +121,18 @@ async function fetchJson(url, options) {
 async function checkStatus() {
   try {
     state.status = await fetchJson("/api/status");
-    const ready = Boolean(state.status.model?.ready);
-    const failed = state.status.model?.status === "load_failed";
-    byId("model-status-text").textContent = ready ? "Trained model loaded" : failed ? "Model could not load" : "Training required";
+    const model = state.status.model;
+    const ready = Boolean(model?.ready);
+    const pretrained = isPretrained(model);
+    const failed = model?.status === "load_failed";
+    byId("model-status-text").textContent = ready ? pretrained ? "Pretrained detector loaded" : "Trained model loaded" : failed ? "Model could not load" : "Model setup required";
     byId("model-status-dot").className = `status-dot${ready ? "" : " amber"}`;
     byId("sidebar-status").textContent = "Workspace connected";
     byId("sidebar-status-dot").className = "status-dot";
-    byId("sidebar-model-copy").textContent = ready ? "Your detector is loaded. Inspect media and review model evidence with care." : failed ? "The checkpoint could not load. Media inspection is available; review model configuration to restore predictions." : "Prepare a dataset and train your detector to unlock predictions.";
+    byId("sidebar-model-copy").textContent = ready ? pretrained ? "A pretrained AI-image detector is loaded. Use its scores for screening; edits and face swaps are outside its scope." : "Your detector is loaded. Inspect media and review model evidence with care." : failed ? "The model could not load. Media inspection is available; review model configuration to restore predictions." : "Load the pretrained AI-image detector, or train a detector on your own data, to unlock predictions.";
+    byId("guide-model-source").replaceChildren();
+    byId("guide-model-source").hidden = !(ready && pretrained);
+    if (ready && pretrained) byId("guide-model-source").append(modelSource(model));
     const limit = state.status.limits?.max_upload_bytes || 52428800;
     byId("upload-limit").textContent = `Up to ${formatBytes(limit).replace(".0", "")} per file`;
     const extensions = [...(state.status.supported?.images || []), ...(state.status.supported?.videos || [])];
@@ -271,18 +305,23 @@ function renderResult(result) {
   const content = byId("result-content");
   content.replaceChildren();
   const prediction = result.prediction;
+  const pretrained = isPretrained(result.model);
   const verdict = element("div", `verdict${prediction ? ` complete${prediction.label === "authentic" ? "" : " flagged"}` : ""}`);
   const verdictLabel = element("div", "verdict-label");
   verdictLabel.append(element("span", "", prediction ? "MODEL ASSESSMENT" : "MEDIA INSPECTION COMPLETE"), icon(prediction ? "scan" : "info"));
   verdict.append(verdictLabel);
   if (prediction) {
-    verdict.append(element("h3", "", classLabels[prediction.label] || "Unrecognized model label"));
-    verdict.append(element("p", "", `${percentage(prediction.confidence)} model confidence. Review the evidence and limitations before drawing a conclusion.`));
+    verdict.append(element("h3", "", predictionLabel(prediction.label, result.model)));
+    verdict.append(element("p", "", `${percentage(prediction.confidence)} model ${pretrained ? "score" : "confidence"}. Review the evidence and limitations before drawing a conclusion.`));
+    if (pretrained) {
+      verdict.append(element("p", "model-scope", "Screens for AI-generated images only. Detection of edits and face swaps is outside its scope. Scores are uncalibrated model outputs and do not establish authenticity."));
+      verdict.append(modelSource(result.model));
+    }
     byId("result-status").textContent = "Model assessed";
     byId("result-status").className = "status-pill success";
   } else {
     verdict.append(element("h3", "", "Detection model needed"));
-    verdict.append(element("p", "", "Your media is ready to review. Train and load a model to get an authenticity assessment. No detection score has been assigned."));
+    verdict.append(element("p", "", "Your media is ready to review. Load the pretrained AI-image detector or train your own model to unlock predictions. No detection score has been assigned."));
     const link = element("button", "result-inline-link", "How to unlock predictions");
     link.append(icon("arrow"));
     link.addEventListener("click", () => showView("guide"));
@@ -293,11 +332,11 @@ function renderResult(result) {
   content.append(verdict);
   if (prediction?.probabilities) {
     const probabilities = element("div", "probabilities");
-    Object.keys(classLabels).forEach((key) => {
+    Object.keys(prediction.probabilities).forEach((key) => {
       const value = prediction.probabilities[key];
       const row = element("div", `probability-row${key === prediction.label ? " winner" : ""}`);
       const label = element("div", "probability-label");
-      label.append(element("span", "", classLabels[key]), element("span", "", percentage(value)));
+      label.append(element("span", "", predictionLabel(key, result.model)), element("span", "", percentage(value)));
       const track = element("div", "probability-track");
       const fill = element("div", "probability-fill");
       fill.style.width = `${Math.max(0, Math.min(1, Number(value) || 0)) * 100}%`;
@@ -373,7 +412,7 @@ function selectFrame(position) {
   byId("face-count").textContent = Number.isInteger(frame.face_count) ? frame.face_count : "—";
   byId("frame-prediction").hidden = !frame.prediction;
   byId("frame-prediction").replaceChildren();
-  if (frame.prediction) byId("frame-prediction").append(element("span", "", "FRAME ASSESSMENT"), element("strong", "", `${classLabels[frame.prediction.label] || frame.prediction.label} · ${percentage(frame.prediction.confidence)}`));
+  if (frame.prediction) byId("frame-prediction").append(element("span", "", "FRAME ASSESSMENT"), element("strong", "", `${predictionLabel(frame.prediction.label, result.model)} · ${percentage(frame.prediction.confidence)}`));
 }
 
 function updateEvidenceImage() {
@@ -386,7 +425,7 @@ function updateEvidenceImage() {
 }
 
 function historyStatus(analysis) {
-  return analysis.prediction ? `${classLabels[analysis.prediction.label] || analysis.prediction.label} · ${percentage(analysis.prediction.confidence)}` : "Inspected · model required";
+  return analysis.prediction ? `${predictionLabel(analysis.prediction.label, analysis.model)} · ${percentage(analysis.prediction.confidence)}` : "Inspected · model required";
 }
 
 function emptyHistory(message) {
@@ -426,7 +465,7 @@ function renderHistory() {
     const row = element("article", "history-row");
     const info = element("div", "history-row-info");
     info.append(element("h2", "history-row-title", analysis.filename), element("p", "history-row-date", `${formatDate(analysis.created_at)} · ${analysis.media_type === "video" ? "Video" : "Image"} · ${formatBytes(analysis.media?.size_bytes)}`));
-    const status = element("span", `status-pill ${analysis.prediction ? "success" : "amber"}`, analysis.prediction ? classLabels[analysis.prediction.label] || "Assessed" : "Model required");
+    const status = element("span", `status-pill ${analysis.prediction ? "success" : "amber"}`, analysis.prediction ? predictionLabel(analysis.prediction.label, analysis.model) : "Model required");
     const actions = element("div", "history-row-actions");
     const view = element("button", "secondary-button", "View analysis");
     view.type = "button";

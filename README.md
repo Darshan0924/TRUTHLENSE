@@ -1,17 +1,22 @@
 # TruthLens AI
 
-A working foundation for the TruthLens AI project: upload an image or video, inspect sampled frames and image quality, and run a locally trained PyTorch classifier with model-attention evidence. Built with Python, FastAPI, OpenCV, PyTorch, and a responsive HTML/CSS/JavaScript dashboard.
+A working foundation for the TruthLens AI project: upload an image or video, inspect sampled frames and image quality, and run a pretrained AI-image detector or a locally trained PyTorch classifier. Built with Python, FastAPI, OpenCV, PyTorch, and a responsive HTML/CSS/JavaScript dashboard.
 
-**No trained detector or labeled dataset is bundled.** The default application processes media but does not invent authenticity labels or confidence scores. After you train a model, it predicts `authentic`, `ai_generated`, or `manipulated`. Predictions are estimates, not proof of authenticity. The compact baseline needs independent evaluation before meaningful use.
+**A pretrained detector can now be downloaded with one setup command.** It screens for AI-generated imagery using two classes and does not detect face swaps or general manipulation. The separate custom training workflow retains `authentic`, `ai_generated`, and `manipulated` classes. Scores are uncalibrated estimates, not proof of authenticity. No dataset or large model weights are stored in Git.
 
 ## Run locally
 
 Requirements: Python 3.12 and [uv](https://docs.astral.sh/uv/). The lockfile selects CPU PyTorch so a GPU is not required.
 
 ```bash
-uv sync --frozen --extra dev
+uv sync --frozen --python 3.12
+uv run --frozen python scripts/setup_pretrained.py
 uv run --frozen uvicorn truthlens.app:app --host 127.0.0.1 --port 8000
 ```
+
+The pretrained setup downloads approximately **348 MB**, verifies the publisher's weight checksum, and stores a pinned local model under `models/pretrained/`. Internet access is needed for setup; later inference stays on your computer. The app automatically loads this verified model on startup. If the app was already running, stop it with **Ctrl+C** and restart it after model setup. An upload made before loading the model keeps its original report; upload again for new predictions.
+
+The default model is [Organika's SDXL detector](https://huggingface.co/Organika/sdxl-detector), published under **CC BY-NC 3.0** for noncommercial use with attribution. It was fine-tuned from [umm-maybe's AI art detector](https://huggingface.co/umm-maybe/AI-image-detector) on Wikimedia/SDXL pairs. This project uses it for an educational demonstration. See [pretrained setup and limitations](docs/PRETRAINED.md) before interpreting a score or planning another use.
 
 Open the local service in a browser. The dashboard supports image/video upload, frame inspection, quality diagnostics, saved analysis history, and JSON report downloads. Preview frames and reports are stored locally under `.truthlens/`; uploaded originals are deleted after processing. No uploads are sent to a remote AI service.
 
@@ -21,7 +26,7 @@ For development with reload:
 uv run --frozen uvicorn truthlens.app:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Use `TRUTHLENS_DATA_DIR` to choose another storage directory and `TRUTHLENS_MODEL_PATH` to load a trusted trained checkpoint. Set these variables before starting the server. A missing or invalid model is shown as unavailable; media inspection remains usable.
+Use `TRUTHLENS_DATA_DIR` to choose another storage directory, `TRUTHLENS_PRETRAINED_DIR` to choose a verified pretrained bundle, and `TRUTHLENS_MODEL_PATH` to load a trusted custom trained checkpoint. A custom checkpoint takes priority over the pretrained model. Set these variables before starting the server. A missing or invalid model is shown as unavailable; media inspection remains usable.
 
 ## Train and evaluate
 
@@ -44,12 +49,12 @@ Browser dashboard
   → FastAPI upload validation
   → Pillow image decoding / OpenCV video sampling
   → quality measurements + frontal face regions + frame thumbnails
-  → optional PyTorch frame classifier + Grad-CAM
+  → pretrained binary image classifier OR custom three-class CNN + Grad-CAM
   → mean frame probabilities for video prediction
   → SQLite history + downloadable JSON evidence report
 ```
 
-The model is a compact three-class CNN baseline. Video analysis samples a bounded number of frames; it is image-model aggregation, not a temporally trained video forensic model. OpenCV's frontal-face cascade identifies optional regions for inspection; the baseline classifier uses the full frame, and face detection can miss faces. Image brightness, contrast, and sharpness are quality measurements, not evidence that media is synthetic. Grad-CAM highlights what influenced the model; it does not identify proven tampered regions.
+The pretrained model is a Swin image classifier. The custom training model is a compact three-class CNN baseline. Video analysis samples a bounded number of frames; it is image-model aggregation, not a temporally trained video forensic model. OpenCV's frontal-face cascade identifies optional regions for inspection; the classifiers use the full frame, and face detection can miss faces. Image brightness, contrast, and sharpness are quality measurements, not evidence that media is synthetic. Grad-CAM is available for the custom CNN and highlights what influenced it; it does not identify proven tampered regions. No heatmap is fabricated for the pretrained transformer.
 
 ## Scope and next steps
 

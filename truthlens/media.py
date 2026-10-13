@@ -170,9 +170,13 @@ def _faces(image: Image.Image) -> list[dict[str, int]]:
     ]
 
 
-def _prediction(raw: dict[str, Any]) -> dict[str, Any]:
+def _prediction(raw: dict[str, Any], classes: tuple[str, ...] = CLASSES) -> dict[str, Any]:
     try:
-        probabilities = {key: float(raw["probabilities"][key]) for key in CLASSES}
+        if (not classes or len(set(classes)) != len(classes)
+                or not set(classes).issubset(CLASSES)
+                or set(raw["probabilities"]) != set(classes)):
+            raise ValueError("Unsupported model classes")
+        probabilities = {key: float(raw["probabilities"][key]) for key in classes}
         if any(not math.isfinite(value) or value < 0 or value > 1 for value in probabilities.values()):
             raise ValueError("Invalid probabilities")
         if not math.isclose(sum(probabilities.values()), 1, abs_tol=0.005):
@@ -203,6 +207,7 @@ def analyze_media(
     else:
         raise MediaError("Upload a JPEG, PNG, WebP, MP4, MOV, AVI, or WebM file.")
     metadata["size_bytes"] = size_bytes
+    classes = tuple(detector.info.get("classes", CLASSES))
     frames: list[dict[str, Any]] = []
     try:
         for index, (timestamp, image) in enumerate(decoded):
@@ -218,14 +223,15 @@ def analyze_media(
                 if detector.ready:
                     try:
                         raw_prediction, heatmap = detector.predict_with_heatmap(image)
-                        frame["prediction"] = _prediction(raw_prediction)
-                        _save_preview(heatmap, directory / f"heatmap-{index}.jpg")
-                        heatmap.close()
+                        frame["prediction"] = _prediction(raw_prediction, classes)
+                        if heatmap is not None:
+                            _save_preview(heatmap, directory / f"heatmap-{index}.jpg")
+                            heatmap.close()
+                            frame["heatmap_url"] = f"/api/analyses/{analysis_id}/heatmaps/{index}"
                     except InferenceError:
                         raise
                     except Exception as exc:
                         raise InferenceError("The configured model could not analyze this media.") from exc
-                    frame["heatmap_url"] = f"/api/analyses/{analysis_id}/heatmaps/{index}"
                 frames.append(frame)
             finally:
                 image.close()
@@ -234,8 +240,8 @@ def analyze_media(
             decoded.close()
     prediction = None
     if detector.ready:
-        means = {key: sum(frame["prediction"]["probabilities"][key] for frame in frames) / len(frames) for key in CLASSES}
-        prediction = _prediction({"probabilities": means})
+        means = {key: sum(frame["prediction"]["probabilities"][key] for frame in frames) / len(frames) for key in classes}
+        prediction = _prediction({"probabilities": means}, classes)
     summary = {"sampled_frames": len(frames), "faces_detected": sum(frame["face_count"] for frame in frames),
                "frames_with_faces": sum(bool(frame["faces"]) for frame in frames)}
     for key in ("brightness", "contrast", "sharpness"):
@@ -245,10 +251,11 @@ def analyze_media(
         "Media classification is probabilistic and cannot establish authenticity or provenance on its own.",
         "Face boxes use a classical frontal-face detector and can miss faces or include false detections. The baseline classifier analyzes the whole frame, not cropped faces.",
     ]
-    if detector.ready:
+    if any(frame["heatmap_url"] for frame in frames):
         limitations.append("Grad-CAM heatmaps show model attention, not proof or boundaries of tampering.")
-    else:
+    if not detector.ready:
         limitations.append("No trained model is configured. This report contains media metadata and quality measurements only; no authenticity prediction was made.")
+    limitations.extend(detector.info.get("limitations", []))
     if media_type == "video":
         limitations.append("Video analysis samples up to 12 evenly spaced frames and averages their class probabilities. Unsampled events and audio are not analyzed.")
     return {
