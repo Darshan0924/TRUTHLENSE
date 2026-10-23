@@ -1,0 +1,17 @@
+Site ID,Site Name,Survey Assigned Date,Completion Date,Work Status,Client Amount,Invoice Number,Client Payment Status,Partner Amount,Partner Payment Status
+OPS-001,Pune - Baner,2026-09-18,2026-10-05,Completed,18500,,Pending,11500,Pending Payment
+OPS-002,Pune - Wakad,2026-09-24,2026-10-07,Completed,23500,INV-002,Payment Received,15000,Paid
+OPS-003,Nashik - Indira Nagar,2026-10-01,,In Progress,17200,,Not Invoiced,9500,Pending Payment
+OPS-004,Mumbai - Andheri,2026-09-11,2026-10-01,Completed,31000,,Invoice Raised,22500,Pending Payment
+OPS-005,Pune - Hinjewadi,2026-10-02,2026-10-16,Completed,19500,,Payment Received,12800,Paid
+OPS-006,Thane - Ghodbunder,2026-10-11,,Scheduled,28000,,Not Invoiced,16000,Not Due
+OPS-007,Kolhapur - Shahupuri,2026-09-29,2026-10-18,Completed,14750,INV-007,Invoice Raised,8000,Pending Payment
+OPS-008,Aurangabad - CIDCO,2026-09-20,2026-10-12,Completed,36250,,Pending,21000,Pending Payment
+OPS-009,Pune - Kothrud,2026-10-07,,In Progress,16400,,Not Invoiced,9100,Not Due
+OPS-010,Sangli - Vishrambag,2026-09-28,2026-10-10,Completed,22500,INV-010,Payment Received,12500,Paid
+OPS-011,Mumbai - Powai,2026-10-09,2026-10-21,Completed,30500,,Invoice Raised,19000,Pending Payment
+OPS-012,Nashik - College Road,2026-09-16,2026-09-30,Completed,12500,INV-012,Payment Received,7800,Paid
+OPS-013,Pune - Pimple Saudagar,2026-10-18,,Scheduled,18750,,Not Invoiced,9700,Not Due
+OPS-014,Solapur - Railway Lines,2026-09-30,2026-10-17,Completed,27800,,Pending,17000,Pending Payment
+OPS-015,Nagpur - Sadar,2026-10-01,2026-10-19,Completed,21000,INV-015,Payment Received,13400,Paid
+OPS-016,Navi Mumbai - Vashi,2026-10-05,2026-10-20,Completed,33000,,Payment Received,22400,Pending Payment
